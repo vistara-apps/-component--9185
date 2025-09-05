@@ -56,6 +56,9 @@ export const PollProvider = ({ children }) => {
   ])
 
   const [userVotes, setUserVotes] = useState({})
+  const [loading, setLoading] = useState(false)
+  const [searchTerm, setSearchTerm] = useState('')
+  const [filterStatus, setFilterStatus] = useState('all')
 
   const createPoll = (pollData) => {
     const newPoll = {
@@ -118,13 +121,67 @@ export const PollProvider = ({ children }) => {
     }
   }
 
+  const getFilteredPolls = () => {
+    let filtered = polls
+
+    // Filter by search term
+    if (searchTerm) {
+      filtered = filtered.filter(poll => 
+        poll.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+        poll.description.toLowerCase().includes(searchTerm.toLowerCase())
+      )
+    }
+
+    // Filter by status
+    if (filterStatus !== 'all') {
+      filtered = filtered.filter(poll => poll.status === filterStatus)
+    }
+
+    return filtered
+  }
+
+  const duplicatePoll = (pollId) => {
+    const originalPoll = polls.find(poll => poll.id === pollId)
+    if (!originalPoll) return null
+
+    const duplicatedPoll = {
+      ...originalPoll,
+      id: Date.now(),
+      title: `${originalPoll.title} (Copy)`,
+      options: originalPoll.options.map(option => ({
+        ...option,
+        votes: 0
+      })),
+      totalVotes: 0,
+      createdAt: new Date(),
+      status: 'active'
+    }
+
+    setPolls(prev => [duplicatedPoll, ...prev])
+    return duplicatedPoll
+  }
+
+  const updatePollStatus = (pollId, status) => {
+    setPolls(prev => prev.map(poll => 
+      poll.id === pollId ? { ...poll, status } : poll
+    ))
+  }
+
   const value = {
     polls,
     userVotes,
+    loading,
+    searchTerm,
+    setSearchTerm,
+    filterStatus,
+    setFilterStatus,
     createPoll,
     votePoll,
     deletePoll,
-    getStats
+    getStats,
+    getFilteredPolls,
+    duplicatePoll,
+    updatePollStatus
   }
 
   return (
